@@ -18,8 +18,7 @@ public class TeamConfigRequestDTO {
     @Size(min = 10, max = 10, message = "members length must be 10.")
     private List<String> members;
 
-    @Valid
-    private Constraints constrains;
+    private Constraints constraints;
 
     @Valid
     private List<PreferPositions> preferPositions;
