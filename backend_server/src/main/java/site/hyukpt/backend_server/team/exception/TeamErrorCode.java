@@ -7,10 +7,12 @@ import site.hyukpt.backend_server.global.exception.ErrorCode;
 @AllArgsConstructor
 public enum TeamErrorCode implements ErrorCode {
 
-    INVALID_MEMBER_COUNT("Team-1", HttpStatus.BAD_REQUEST, "멤버 수는 정확히 10명이어야 합니다."),
+    DUPLICATE_MEMBER_NAME("Team-1", HttpStatus.BAD_REQUEST, "중복 이름이 있습니다."),
     INVALID_PAIR_SIZE("Team-2", HttpStatus.BAD_REQUEST, "mustBeDifferentTeamPairs는 각 쌍이 2명이어야 합니다."),
     INVALID_SAME_GROUP_SIZE("Team-3",HttpStatus.BAD_REQUEST, "mustBeSameTeamGroups는 각 그룹이 2~5명이어야 합니다."),
-    NAME_NOT_IN_MEMBERS("Team-4",HttpStatus.BAD_REQUEST, "constraints에 등장하는 이름은 members에 존재해야 합니다.");
+    NAME_NOT_IN_MEMBERS("Team-4",HttpStatus.BAD_REQUEST, "members에 없는 이름이 포함되어 있습니다."),
+    INVALID_POSITION_NAME("Team-5", HttpStatus.BAD_REQUEST, "올바르지 않은 position 이름입니다."),
+    INVALID_PREFER_SIZE("Team-6", HttpStatus.BAD_REQUEST, "prefer position은 1~5개를 선택하여야 합니다.");
 
     private final String code;
     private final HttpStatus httpStatus;
