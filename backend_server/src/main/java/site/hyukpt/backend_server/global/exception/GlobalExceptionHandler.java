@@ -18,7 +18,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponseDTO> handleBusiness(BusinessException e) {
         return ResponseEntity.status(e.getErrorCode().getHttpStatus())
-                .body(ErrorResponseDTO.of(e.getErrorCode()));
+                .body(ErrorResponseDTO.of(e.getErrorCode(), e.getCustomMessage(), e.getDetail()));
     }
 
     // 예상치 못한 오류 마지막 안전망
@@ -26,7 +26,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleUnexpected(Exception e) {
         return ResponseEntity
                 .status(GlobalErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
-                .body(ErrorResponseDTO.of(GlobalErrorCode.INTERNAL_SERVER_ERROR));
+                .body(ErrorResponseDTO.of(GlobalErrorCode.INTERNAL_SERVER_ERROR, null, null));
     }
 
     // handleUnexpected에 ResponseStatusException이 씹히지 않도록 잡아주기
@@ -39,7 +39,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 : ec.getMessage();
 
         return ResponseEntity.status(ec.getHttpStatus())
-                .body(ErrorResponseDTO.of(ec, message));
+                .body(ErrorResponseDTO.of(ec, message, null));
     }
 
     /*
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 : ec.getMessage();
 
         return ResponseEntity.status(ec.getHttpStatus())
-                .body(ErrorResponseDTO.of(ec, message));
+                .body(ErrorResponseDTO.of(ec, message, null));
     }
 
     private ErrorCode mapStatus(HttpStatusCode status) {
@@ -84,7 +84,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         });
 
         return ResponseEntity.status(GlobalErrorCode.BAD_REQUEST.getHttpStatus())
-                .body(ErrorResponseDTO.of(GlobalErrorCode.BAD_REQUEST, sb.toString()));
+                .body(ErrorResponseDTO.of(GlobalErrorCode.BAD_REQUEST, sb.toString(), null));
     }
 
     // ConstraintViolationException 출력형태 커스텀
@@ -100,7 +100,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         });
 
         return ResponseEntity.status(GlobalErrorCode.BAD_REQUEST.getHttpStatus())
-                .body(ErrorResponseDTO.of(GlobalErrorCode.BAD_REQUEST, sb.toString()));
+                .body(ErrorResponseDTO.of(GlobalErrorCode.BAD_REQUEST, sb.toString(), null));
     }
 
 }
