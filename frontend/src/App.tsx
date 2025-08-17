@@ -1,127 +1,32 @@
 import teemoCover from './assets/teemo.webp'
 import './App.css'
 import React, {useEffect, useState} from "react";
+import GamePlayerEditPopup from "./popup/GamePlayerEditPopup.tsx";
+import GameRuleEditPopup, {
+  type MustBeDifferentTeamPairType,
+  type MustBeSameTeamGroupType,
+  type PlayerPreferPositionType,
+  type PreferPositionType
+} from "./popup/GameRuleEditPopup.tsx";
 
-function GamePlayerEditPopup({player, setPlayer, handleCloseButtonClick}: {
-  player: string[],
-  setPlayer: React.Dispatch<React.SetStateAction<string[]>>,
-  handleCloseButtonClick: () => void
-}) {
-
-  const [tempPlayer, setTempPlayer] = useState<string[]>(player);
-  const [newPlayer, setNewPlayer] = useState<string>('');
-
-
-  const handleTempPlayerPlusInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // isComposing은 한글 입력 시 조합 중(ex: 'ㄷㅏ') Enter가 눌리는 것을 방지합니다.
-    if (e.nativeEvent.isComposing) {
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      // form 태그 안에서 Enter를 누르면 기본적으로 페이지가 새로고침되는 현상을 방지
-      e.preventDefault();
-
-      handleTempPlayerPlusButtonClick();
-    }
-  };
-
-  const handleTempPlayerPlusButtonClick = () => {
-    const trimmedNewPlayer = newPlayer.trim();
-
-    if (trimmedNewPlayer === '') {
-      alert("선수 이름을 입력해주세요.");
-      return;
-    }
-
-    if (tempPlayer.includes(trimmedNewPlayer)) {
-      alert("이미 추가된 선수입니다.");
-      return;
-    }
-
-    setTempPlayer(prevTempPlayer => [trimmedNewPlayer, ...prevTempPlayer]);
-    setNewPlayer('');
+function koreanPreferPositionType(ppt: PreferPositionType) {
+  switch (ppt) {
+    case "top":
+      return "탑";
+    case "jg":
+      return "정글";
+    case "ad":
+      return "원딜";
+    case "mid":
+      return "미드";
+    case "sup":
+      return "서포터";
   }
-
-  const handleTempPlayerXButtonClick = (playerToRemove: string) => {
-    setTempPlayer(prevTempPlayer =>
-      prevTempPlayer.filter(p => p !== playerToRemove)
-    );
-  };
-
-  const handleSaveButtonClick = () => {
-    if (tempPlayer.length !== 10) {
-      alert("10명의 선수를 입력해주세요.");
-      return;
-    }
-    setPlayer(tempPlayer);
-    handleCloseButtonClick();
-  }
-
-
-  const tempPlayerCard = tempPlayer.map(tp => {
-    return (
-      <div className="popup-body-box-player-card" key={tp}>
-        <p>{tp}</p>
-        <button type="button" onClick={() => handleTempPlayerXButtonClick(tp)}>
-          <svg className="x" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <path d="M36 12L12 36M12 12L36 36" stroke="currentColor" strokeWidth="4" strokeLinecap="round"
-                  strokeLinejoin="round"/>
-          </svg>
-        </button>
-      </div>
-    );
-  });
-
-  return (
-    <div className="popup-wrapper">
-      <div className="popup">
-        <div className="popup-title-box">
-          <p className="popup-title-box-title">선수 편집하기</p>
-          <p className="popup-title-box-subtitle">그룹에 소속될 선수 편집하기</p>
-        </div>
-        <div className="popup-body-box">
-          <div className="popup-body-box-summary-box">
-            <p className="popup-body-box-summary-box-summary">{"현재 총 " + tempPlayer.length + "명"}</p>
-          </div>
-          <div className="popup-body-box-player-box popup-body-box-player-box-plus">
-            {/*선수 편집 카드*/}
-            {tempPlayer.length < 10 &&
-              <label className="popup-body-box-player-card popup-body-box-player-card-plus" htmlFor="popup-edit-name">
-                <input type="text" placeholder="선수 이름 입력" value={newPlayer} id="popup-edit-name"
-                       onChange={e => setNewPlayer(e.target.value)}
-                       onKeyDown={handleTempPlayerPlusInputKeyDown}/>
-                <button type="button" onClick={handleTempPlayerPlusButtonClick}>
-                  <svg className="plus" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"
-                       fill="none">
-                    <path d="M24 10V38M10 24H38" stroke="currentColor" strokeWidth="4" strokeLinecap="round"
-                          strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </label>
-            }
-            {/*추가된 선수 카드*/}
-            {tempPlayerCard}
-          </div>
-        </div>
-        <div className="popup-footer">
-          <div className="popup-footer-button-box">
-            <button type="button" className="popup-footer-button-subtle" onClick={handleCloseButtonClick}>
-              닫기
-            </button>
-            <button type="button" className="popup-footer-button-primary" onClick={handleSaveButtonClick}>
-              저장하기
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
-function DeleteIconButton() {
+function DeleteIconButton({handleClick}: { handleClick: React.MouseEventHandler<HTMLButtonElement> }) {
   return (
-    <button type="button">
+    <button type="button" onClick={handleClick}>
       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
         <g clipPath="url(#clip0_18_557)">
           <path
@@ -148,10 +53,13 @@ function GamePlayerListBoxCard({title}: { title: string }) {
   );
 }
 
+type PopUpStatusType = 'close' | 'player' | 'rule';
+
+
 function App() {
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [isPlayerPopupOpen, setIsPlayerPopupOpen] = useState<boolean>(false);
+  const [popUpStatus, setPopUpStatus] = useState<PopUpStatusType>('close');
   const [player, setPlayer] = useState<string[]>(["muleo",
     "광주비주얼",
     "은 혁",
@@ -162,18 +70,67 @@ function App() {
     "인 천 마 인 부 우",
     "세트메뉴3번",
     "의랄라",]);
+  const [mustBeSameTeamGroups, setMustBeSameTeamGroups] = useState<MustBeSameTeamGroupType[]>([]);
+  const [mustBeDifferentTeamPairs, setMustBeDifferentTeamPairs] = useState<MustBeDifferentTeamPairType[]>([]);
+  const [preferPositions, setPreferPositions] = useState<PlayerPreferPositionType[]>([]);
 
-  const gamePlayerList = player.map((value, index) =>
-    <GamePlayerListBoxCard key={index} title={value}/>
-  )
+  function handleAddMustBeSameTeamGroupsRuleClick(mustBeSameTeamGroup: MustBeSameTeamGroupType): void {
+    // ★ 중요: 새로 추가할 그룹의 배열을 미리 정렬합니다.
+    const sortedGroup = [...mustBeSameTeamGroup.group].sort();
+    const newGroupSignature = sortedGroup.join(',');
+    const isDuplicate = mustBeSameTeamGroups.some(existingGroup => {
+      // ★ 중요: 기존 그룹은 이미 정렬되어 있으므로 sort()를 생략합니다.
+      const existingGroupSignature = existingGroup.group.join(',');
+      return existingGroupSignature === newGroupSignature;
+    });
 
-  const toggleTheme = () => {
+    // 중복이 아니면 정렬된 버전의 객체를 state에 추가합니다.
+    if (!isDuplicate) {
+      const newItemGroup = {
+        ...mustBeSameTeamGroup,
+        group: sortedGroup // 정렬된 배열을 저장
+      };
+      setMustBeSameTeamGroups([...mustBeSameTeamGroups, newItemGroup]);
+    }
+  }
+
+  function handleAddMustBeDifferentTeamPairsClick(mustBeDifferentTeamPair: MustBeDifferentTeamPairType): void {
+    setMustBeDifferentTeamPairs([...mustBeDifferentTeamPairs, mustBeDifferentTeamPair]);
+  }
+
+  function handleAddPreferPositionsClick(preferPosition: PlayerPreferPositionType): void {
+    setPreferPositions([...preferPositions, preferPosition]);
+  }
+
+  function handleThemeButtonClick(): void {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
+  }
 
-  const handlePlayerPopupButtonClick: () => void = () => {
-    setIsPlayerPopupOpen(true);
-  };
+  function handlePlayerPopupButtonClick(): void {
+    setPopUpStatus('player');
+  }
+
+  function handleRulePopupButtonClick(): void {
+    setPopUpStatus('rule')
+  }
+
+  function handleMustBeSameTeamGroupDeleteButtonClick(mustBeSameTeamGroupId: string) {
+    setMustBeSameTeamGroups(
+      mustBeSameTeamGroups.filter(mbstg => mbstg.id !== mustBeSameTeamGroupId)
+    );
+  }
+
+  function handleMustBeDifferentTeamPairDeleteButtonClick(mustBeDifferentTeamPairId: string) {
+    setMustBeDifferentTeamPairs(
+      mustBeDifferentTeamPairs.filter(mbdtp => mbdtp.id !== mustBeDifferentTeamPairId)
+    );
+  }
+
+  function handlePreferPositionDeleteButtonClick(preferPositionId: string) {
+    setPreferPositions(
+      preferPositions.filter(pp => pp.id !== preferPositionId)
+    );
+  }
 
   // 초기 테마: 시스템 설정
   useEffect(() => {
@@ -201,11 +158,11 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // isPlayerPopupOpen 상태가 변경될 때마다 실행됩니다.
+  // popUpStatus 가 변경될 때마다 실행
   useEffect(() => {
     const header = document.querySelector('.header');
 
-    if (isPlayerPopupOpen) {
+    if (popUpStatus !== 'close') {
       // 1. 현재 스크롤바의 너비를 계산합니다.
       //    (전체 창 너비 - 스크롤바를 제외한 컨텐츠 너비)
       const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -231,13 +188,18 @@ function App() {
     return () => {
       document.body.classList.remove('popup-open');
     };
-  }, [isPlayerPopupOpen]);
+  }, [popUpStatus]);
+
+
+  const gamePlayerList = player.map(value =>
+    <GamePlayerListBoxCard key={value} title={value}/>
+  )
 
   return (
     <>
       <div className="header">
         <div className="header-box">
-          <button type="button" className="header-theme-button" onClick={toggleTheme}>
+          <button type="button" className="header-theme-button" onClick={handleThemeButtonClick}>
             {
               theme === 'light' ?
                 (
@@ -299,7 +261,7 @@ function App() {
             <p className="game-player-title-box-title">
               규칙
             </p>
-            <button type="button" className="game-player-title-box-button">
+            <button type="button" className="game-player-title-box-button" onClick={handleRulePopupButtonClick}>
               <svg className="game-player-title-box-button-icon" width="32" height="32" viewBox="0 0 32 32" fill="none"
                    xmlns="http://www.w3.org/2000/svg">
                 <path
@@ -313,27 +275,54 @@ function App() {
           </div>
           {/*규칙 목록 리스트 박스*/}
           <div className="game-rule-list-box">
-            <div className="game-rule-list-box-title">
-              <span>같은 팀 규칙</span>
-            </div>
-            <div className="game-rule-list-box-body-box">
-              <span>총 2명. “전설이 될 남자”, “가락마을 호카게” 는 같은 팀이 됩니다.</span>
-              <DeleteIconButton/>
-            </div>
-            <div className="game-rule-list-box-title">
-              <span>다른 팀 규칙</span>
-            </div>
-            <div className="game-rule-list-box-body-box">
-              <span>“?” 과 “?” 은 다른 팀이 됩니다.</span>
-              <DeleteIconButton/>
-            </div>
-            <div className="game-rule-list-box-title">
-              <span>같은 팀 규칙</span>
-            </div>
-            <div className="game-rule-list-box-body-box">
-              <span>“반응속도할아버지” 은 “탑”, “정글”, “바텀”, “서포터” 에  고정됩니다.</span>
-              <DeleteIconButton/>
-            </div>
+            {
+              mustBeSameTeamGroups.length > 0 &&
+              <div className="game-rule-list-box-title">
+                <span>같은 팀 규칙</span>
+              </div>
+            }
+            {
+              mustBeSameTeamGroups.map(mbstg => {
+                return (
+                  <div key={mbstg.id} className="game-rule-list-box-body-box">
+                    <span>{`총 ${mbstg.group.length}명. ${mbstg.group.map(name => `“${name}”`).join(', ')} 는 같은 팀이 됩니다.`}</span>
+                    <DeleteIconButton handleClick={() => handleMustBeSameTeamGroupDeleteButtonClick(mbstg.id)}/>
+                  </div>
+                );
+              })
+            }
+            {
+              mustBeDifferentTeamPairs.length > 0 &&
+              <div className="game-rule-list-box-title">
+                <span>다른 팀 규칙</span>
+              </div>
+            }
+            {
+              mustBeDifferentTeamPairs.map(mbdtg => {
+                return (
+                  <div key={mbdtg.id} className="game-rule-list-box-body-box">
+                    <span>{`총 ${mbdtg.group.length}명. ${mbdtg.group.map(name => `“${name}”`).join(', ')} 는 다른 팀이 됩니다.`}</span>
+                    <DeleteIconButton handleClick={() => handleMustBeDifferentTeamPairDeleteButtonClick(mbdtg.id)}/>
+                  </div>
+                );
+              })
+            }
+            {
+              preferPositions.length > 0 &&
+              <div className="game-rule-list-box-title">
+                <span>포지션 고정 규칙</span>
+              </div>
+            }
+            {
+              preferPositions.map(pp => {
+                return (
+                  <div key={pp.id} className="game-rule-list-box-body-box">
+                    <span>{`“${pp.name}” 은 ${pp.prefer.map(ppt => `“${koreanPreferPositionType(ppt)}”`).join(', ')} 에  고정됩니다.`}</span>
+                    <DeleteIconButton handleClick={() => handlePreferPositionDeleteButtonClick(pp.id)}/>
+                  </div>
+                );
+              })
+            }
           </div>
         </div>
         {/*버튼*/}
@@ -350,9 +339,16 @@ function App() {
         </button>
         {/*  메인 박스 끝*/}
       </div>
-      {isPlayerPopupOpen &&
+      {popUpStatus === 'player' &&
         <GamePlayerEditPopup player={player} setPlayer={setPlayer}
-                             handleCloseButtonClick={() => setIsPlayerPopupOpen(false)}/>}
+                             handleCloseButtonClick={() => setPopUpStatus('close')}/>}
+      {popUpStatus === 'rule' &&
+        <GameRuleEditPopup
+          player={player}
+          handleAddMustBeSameTeamGroupsRuleClick={handleAddMustBeSameTeamGroupsRuleClick}
+          handleAddMustBeDifferentTeamPairsClick={handleAddMustBeDifferentTeamPairsClick}
+          handleAddPreferPositionsClick={handleAddPreferPositionsClick}
+          handleCloseButtonClick={() => setPopUpStatus('close')}/>}
     </>
   )
 }
