@@ -1,28 +1,13 @@
 import teemoCover from './assets/teemo.webp'
 import './App.css'
-import React, {useEffect, useState} from "react";
+import React, {Fragment, useEffect, useState} from "react";
 import GamePlayerEditPopup from "./popup/GamePlayerEditPopup.tsx";
 import GameRuleEditPopup, {
   type MustBeDifferentTeamPairType,
   type MustBeSameTeamGroupType,
   type PlayerPreferPositionType,
-  type PreferPositionType
 } from "./popup/GameRuleEditPopup.tsx";
-
-function koreanPreferPositionType(ppt: PreferPositionType) {
-  switch (ppt) {
-    case "top":
-      return "탑";
-    case "jg":
-      return "정글";
-    case "ad":
-      return "원딜";
-    case "mid":
-      return "미드";
-    case "sup":
-      return "서포터";
-  }
-}
+import {KOREAN_PREFER_POSITION_MAP} from "./popup/preferPosition.ts";
 
 function DeleteIconButton({handleClick}: { handleClick: React.MouseEventHandler<HTMLButtonElement> }) {
   return (
@@ -95,11 +80,43 @@ function App() {
   }
 
   function handleAddMustBeDifferentTeamPairsClick(mustBeDifferentTeamPair: MustBeDifferentTeamPairType): void {
-    setMustBeDifferentTeamPairs([...mustBeDifferentTeamPairs, mustBeDifferentTeamPair]);
+    // ★ 중요: 새로 추가할 그룹의 배열을 미리 정렬합니다.
+    const sortedPair = [...mustBeDifferentTeamPair.pair].sort();
+    const newPairSignature = sortedPair.join(',');
+    const isDuplicate = mustBeDifferentTeamPairs.some(existingPair => {
+      // ★ 중요: 기존 그룹은 이미 정렬되어 있으므로 sort()를 생략합니다.
+      const existingPairSignature = existingPair.pair.join(',');
+      return existingPairSignature === newPairSignature;
+    });
+
+    // 중복이 아니면 정렬된 버전의 객체를 state에 추가합니다.
+    if (!isDuplicate) {
+      const newItemPair = {
+        ...mustBeDifferentTeamPair,
+        pair: sortedPair // 정렬된 배열을 저장
+      };
+      setMustBeDifferentTeamPairs([...mustBeDifferentTeamPairs, newItemPair]);
+    }
   }
 
   function handleAddPreferPositionsClick(preferPosition: PlayerPreferPositionType): void {
-    setPreferPositions([...preferPositions, preferPosition]);
+    const isDuplicate = preferPositions.some(pp => pp.name === preferPosition.name);
+    // 중복이면 교체
+    if (isDuplicate) {
+      setPreferPositions(preferPositions.map(pp => {
+        if (pp.name === preferPosition.name) {
+          return preferPosition;
+        } else {
+          return pp;
+        }
+      }));
+    } else {
+      setPreferPositions([
+        ...preferPositions,
+        preferPosition
+      ]);
+    }
+
   }
 
   function handleThemeButtonClick(): void {
@@ -285,7 +302,9 @@ function App() {
               mustBeSameTeamGroups.map(mbstg => {
                 return (
                   <div key={mbstg.id} className="game-rule-list-box-body-box">
-                    <span>{`총 ${mbstg.group.length}명. ${mbstg.group.map(name => `“${name}”`).join(', ')} 는 같은 팀이 됩니다.`}</span>
+                    <span>총 {mbstg.group.length}명. {mbstg.group.map((name, i) => <Fragment key={name}>{i != 0 && ', '}
+                      <span
+                        className={player.includes(name) ? "set" : "unset"}>{name}</span></Fragment>)} 는 같은 팀이 됩니다.</span>
                     <DeleteIconButton handleClick={() => handleMustBeSameTeamGroupDeleteButtonClick(mbstg.id)}/>
                   </div>
                 );
@@ -301,7 +320,9 @@ function App() {
               mustBeDifferentTeamPairs.map(mbdtg => {
                 return (
                   <div key={mbdtg.id} className="game-rule-list-box-body-box">
-                    <span>{`총 ${mbdtg.group.length}명. ${mbdtg.group.map(name => `“${name}”`).join(', ')} 는 다른 팀이 됩니다.`}</span>
+                    <span>총 {mbdtg.pair.length}명. {mbdtg.pair.map((name, i) => <Fragment key={name}>{i != 0 && ', '}
+                      <span
+                        className={player.includes(name) ? "set" : "unset"}>{name}</span></Fragment>)} 는 다른 팀이 됩니다.</span>
                     <DeleteIconButton handleClick={() => handleMustBeDifferentTeamPairDeleteButtonClick(mbdtg.id)}/>
                   </div>
                 );
@@ -317,7 +338,14 @@ function App() {
               preferPositions.map(pp => {
                 return (
                   <div key={pp.id} className="game-rule-list-box-body-box">
-                    <span>{`“${pp.name}” 은 ${pp.prefer.map(ppt => `“${koreanPreferPositionType(ppt)}”`).join(', ')} 에  고정됩니다.`}</span>
+                    <span>
+                      {
+                        <span className={player.includes(pp.name) ? "set" : "unset"}>{pp.name}</span>
+                      }은 {
+                      pp.prefer.map((ppt, i) => <Fragment key={ppt}>{i != 0 && ', '}<span
+                        className="set">{KOREAN_PREFER_POSITION_MAP[ppt]}</span></Fragment>)
+                    } 에 고정됩니다.
+                    </span>
                     <DeleteIconButton handleClick={() => handlePreferPositionDeleteButtonClick(pp.id)}/>
                   </div>
                 );

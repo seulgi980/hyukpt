@@ -211,6 +211,15 @@
   align-self: stretch;
 }
 
+.game-rule-list-box-body-box span.set {
+  color: var(--sds-color-text-positive-secondary);
+}
+
+.game-rule-list-box-body-box span.unset {
+  text-decoration-line: line-through;
+  color: var(--sds-color-text-danger-secondary);
+}
+
 .game-rule-list-box-body-box span {
   color: var(--sds-color-text-default-secondary);
 
@@ -576,6 +585,14 @@
   color: var(--sds-color-icon-default-secondary);
 }
 
+.popup-body-box-player-list-box-player svg.unset {
+  color: var(--sds-color-icon-positive-secondary);
+}
+
+.popup-body-box-player-list-box-player svg.set {
+  color: var(--sds-color-icon-danger-secondary);
+}
+
 .popup-body-box-player-list-box-player p {
   color: var(--sds-color-text-default-default);
   font-family: var(--sds-typography-heading-font-family), serif;
@@ -685,4 +702,30 @@
 
 .popup-body-box-result-box-making-box-same-card svg:hover {
   filter: drop-shadow(0 0 0.5em var(--sds-color-icon-danger-secondary));
+}
+
+
+.popup-body-box-result-box-making-box-position {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.popup-body-box-result-box-making-box-position-icon {
+
+}
+
+.popup-body-box-result-box-making-box-position-icon svg {
+  color: var(--sds-color-icon-positive-secondary);
+  transition: filter 0.3s ease;
+  opacity: 0.1;
+}
+
+.popup-body-box-result-box-making-box-position-icon svg:hover {
+  filter: drop-shadow(0 0 0.5em var(--sds-color-icon-positive-secondary));
+}
+
+.popup-body-box-result-box-making-box-position-icon svg.on {
+  color: var(--sds-color-icon-positive-secondary);
+  opacity: 1.0;
 }
