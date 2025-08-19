@@ -338,6 +338,7 @@
   align-items: flex-start;
   gap: 16px;
   align-self: stretch;
+  background: var(--sds-color-background-default-default);
 }
 
 
@@ -728,4 +729,80 @@
 .popup-body-box-result-box-making-box-position-icon svg.on {
   color: var(--sds-color-icon-positive-secondary);
   opacity: 1.0;
+}
+
+.popup-body-box-player {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sds-size-space-1200);
+}
+
+.popup-body-box-player-result-box {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sds-size-space-600);
+}
+
+.popup-body-box-player-result-box-team-box {
+  display: flex;
+  width: 47%;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sds-size-space-600);
+}
+
+.popup-body-box-player-result-box-team-box.left {
+  align-items: flex-end;
+}
+
+.popup-body-box-player-result-box-team-box.right {
+  align-items: flex-start;
+}
+
+.popup-body-box-player-result-box-team-box-card {
+  box-sizing: border-box;
+  display: flex;
+  height: 54px;
+  padding: var(--sds-size-space-600);
+  align-items: center;
+  gap: var(--sds-size-space-600);
+  border-radius: var(--sds-size-radius-200);
+  border: var(--sds-size-stroke-border) solid var(--sds-color-border-default-default);
+  background: var(--sds-color-background-default-default);
+}
+
+.popup-body-box-player-result-box-team-box-card.left {
+  justify-content: flex-end;
+}
+
+.popup-body-box-player-result-box-team-box-card.right {
+  justify-content: flex-start;
+}
+
+.popup-body-box-player-result-box-team-box-card p {
+  color: var(--sds-color-text-default-default);
+  text-align: center;
+  font-family: var(--sds-typography-heading-font-family), serif;
+  font-size: var(--sds-typography-heading-size-base);
+  font-style: normal;
+  font-weight: var(--sds-typography-heading-font-weight);
+  line-height: 120%; /* 28.8px */
+  letter-spacing: -0.48px;
+}
+
+.popup-body-box-player-result-box-role-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--sds-size-space-600);
+}
+
+.popup-body-box-player-result-box-role-box svg {
+  height: 54px;
+  color: var(--sds-color-background-warning-default);
 }

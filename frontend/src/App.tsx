@@ -8,6 +8,8 @@ import GameRuleEditPopup, {
   type PlayerPreferPositionType,
 } from "./popup/GameRuleEditPopup.tsx";
 import {KOREAN_PREFER_POSITION_MAP} from "./popup/preferPosition.ts";
+import GameResultPopup from "./popup/GameResultPopup.tsx";
+import type {GameResult} from "./popup/GameResultPopup.tsx";
 
 function DeleteIconButton({handleClick}: { handleClick: React.MouseEventHandler<HTMLButtonElement> }) {
   return (
@@ -38,7 +40,7 @@ function GamePlayerListBoxCard({title}: { title: string }) {
   );
 }
 
-type PopUpStatusType = 'close' | 'player' | 'rule';
+type PopUpStatusType = 'close' | 'player' | 'rule' | 'result';
 
 
 function App() {
@@ -58,6 +60,19 @@ function App() {
   const [mustBeSameTeamGroups, setMustBeSameTeamGroups] = useState<MustBeSameTeamGroupType[]>([]);
   const [mustBeDifferentTeamPairs, setMustBeDifferentTeamPairs] = useState<MustBeDifferentTeamPairType[]>([]);
   const [preferPositions, setPreferPositions] = useState<PlayerPreferPositionType[]>([]);
+
+  const gameResult: GameResult = {
+    top1: player[0],
+    jg1: player[1],
+    mid1: player[2],
+    ad1: player[3],
+    sup1: player[4],
+    top2: player[5],
+    jg2: player[6],
+    mid2: player[7],
+    ad2: player[8],
+    sup2: player[9],
+  }
 
   function handleAddMustBeSameTeamGroupsRuleClick(mustBeSameTeamGroup: MustBeSameTeamGroupType): void {
     // ★ 중요: 새로 추가할 그룹의 배열을 미리 정렬합니다.
@@ -128,7 +143,11 @@ function App() {
   }
 
   function handleRulePopupButtonClick(): void {
-    setPopUpStatus('rule')
+    setPopUpStatus('rule');
+  }
+
+  function handleResultPopupButtonClick(): void {
+    setPopUpStatus('result');
   }
 
   function handleMustBeSameTeamGroupDeleteButtonClick(mustBeSameTeamGroupId: string) {
@@ -361,7 +380,7 @@ function App() {
               d="M19.6667 1.5L25 6.77273M25 6.77273L19.6667 12.0455M25 6.77273L6.33333 6.77273C4.91885 6.77273 3.56229 7.32825 2.5621 8.31707C1.5619 9.3059 1 10.647 1 12.0455V14.6818M6.33333 30.5L1 25.2273M1 25.2273L6.33333 19.9545M1 25.2273L19.6667 25.2273C21.0812 25.2273 22.4377 24.6718 23.4379 23.6829C24.4381 22.6941 25 21.353 25 19.9545V17.3182"
               stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <p className="game-player-title-box-button-text">
+          <p className="game-player-title-box-button-text" onClick={handleResultPopupButtonClick}>
             랜덤 팀 돌리기
           </p>
         </button>
@@ -376,6 +395,11 @@ function App() {
           handleAddMustBeSameTeamGroupsRuleClick={handleAddMustBeSameTeamGroupsRuleClick}
           handleAddMustBeDifferentTeamPairsClick={handleAddMustBeDifferentTeamPairsClick}
           handleAddPreferPositionsClick={handleAddPreferPositionsClick}
+          handleCloseButtonClick={() => setPopUpStatus('close')}/>}
+
+      {popUpStatus === 'result' &&
+        <GameResultPopup
+          gameResult={gameResult}
           handleCloseButtonClick={() => setPopUpStatus('close')}/>}
     </>
   )
