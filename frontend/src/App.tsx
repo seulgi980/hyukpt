@@ -8,8 +8,8 @@ import GameRuleEditPopup, {
   type PlayerPreferPositionType,
 } from "./popup/GameRuleEditPopup.tsx";
 import {KOREAN_PREFER_POSITION_MAP} from "./popup/preferPosition.ts";
-import GameResultPopup from "./popup/GameResultPopup.tsx";
 import type {GameResult} from "./popup/GameResultPopup.tsx";
+import GameResultPopup from "./popup/GameResultPopup.tsx";
 
 function DeleteIconButton({handleClick}: { handleClick: React.MouseEventHandler<HTMLButtonElement> }) {
   return (
@@ -147,6 +147,22 @@ function App() {
   }
 
   function handleResultPopupButtonClick(): void {
+
+    // 검증 로직
+    if (mustBeSameTeamGroups.some(mbstgs => mbstgs.group.some(mbstg => !player.includes(mbstg)))) {
+      alert('같은 팀 규칙의 선수가 올바르지 않습니다.');
+      return;
+    }
+    if (mustBeDifferentTeamPairs.some(mbdtps => mbdtps.pair.some(mbdtp => !player.includes(mbdtp)))) {
+      alert('다른 팀 규칙의 선수가 올바르지 않습니다.');
+      return;
+    }
+    // preferPositions
+    if (preferPositions.some(pps => !player.includes(pps.name))) {
+      alert('포지션 고정 규칙의 선수가 올바르지 않습니다.');
+      return;
+    }
+
     setPopUpStatus('result');
   }
 
@@ -373,14 +389,14 @@ function App() {
           </div>
         </div>
         {/*버튼*/}
-        <button type="button" className="random-button">
+        <button type="button" className="random-button" onClick={handleResultPopupButtonClick}>
           <svg className="random-button-icon" xmlns="http://www.w3.org/2000/svg" width="26" height="32"
                viewBox="0 0 26 32" fill="none">
             <path
               d="M19.6667 1.5L25 6.77273M25 6.77273L19.6667 12.0455M25 6.77273L6.33333 6.77273C4.91885 6.77273 3.56229 7.32825 2.5621 8.31707C1.5619 9.3059 1 10.647 1 12.0455V14.6818M6.33333 30.5L1 25.2273M1 25.2273L6.33333 19.9545M1 25.2273L19.6667 25.2273C21.0812 25.2273 22.4377 24.6718 23.4379 23.6829C24.4381 22.6941 25 21.353 25 19.9545V17.3182"
               stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <p className="game-player-title-box-button-text" onClick={handleResultPopupButtonClick}>
+          <p className="game-player-title-box-button-text">
             랜덤 팀 돌리기
           </p>
         </button>

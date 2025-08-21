@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {useImmer} from "use-immer";
 import {KOREAN_PREFER_POSITION_MAP, POSITION_ORDER, type PreferPositionType} from "./preferPosition.ts";
 
@@ -56,36 +56,7 @@ export default function GameRuleEditPopup(
     posi: false
   });
 
-  // 규칙 변경 시 마다 다른 상태 초기화
-  useEffect(() => {
-    setMustBeSameTeamGroup([]);
-    setMustBeDifferentTeamPair(['', '']);
-    updatePreferPosition(null);
-    setIsDraggingOver({
-      same: false,
-      dif1: false,
-      dif2: false,
-      posi: false
-    });
-  }, [ruleStatus, updatePreferPosition]);
-
-  function isPlayerSet(p: string) {
-    if (ruleStatus === 'same') {
-      return mustBeSameTeamGroup.includes(p);
-    }
-    if (ruleStatus === 'different') {
-      return mustBeDifferentTeamPair.includes(p);
-    }
-    if (ruleStatus === 'prefer') {
-      if (preferPosition) {
-        return preferPosition.name === p;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  function handleAddButtonClick() {
+  const handleAddButtonClick = useCallback(() => {
     if (ruleStatus === 'same') {
       if (mustBeSameTeamGroup.length === 1) {
         alert("같은 팀 규칙은 최소 2명입니다.");
@@ -124,6 +95,53 @@ export default function GameRuleEditPopup(
       handleAddPreferPositionsClick(preferPosition);
     }
     handleCloseButtonClick();
+  }, [ruleStatus, mustBeSameTeamGroup, handleAddMustBeSameTeamGroupsRuleClick, mustBeDifferentTeamPair, handleAddMustBeDifferentTeamPairsClick, preferPosition, handleAddPreferPositionsClick, handleCloseButtonClick])
+
+  // 규칙 변경 시 마다 다른 상태 초기화
+  useEffect(() => {
+    setMustBeSameTeamGroup([]);
+    setMustBeDifferentTeamPair(['', '']);
+    updatePreferPosition(null);
+    setIsDraggingOver({
+      same: false,
+      dif1: false,
+      dif2: false,
+      posi: false
+    });
+  }, [ruleStatus, updatePreferPosition]);
+
+  useEffect(() => {
+    // 키보드 이벤트의 타입을 명시합니다 (KeyboardEvent).
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        handleCloseButtonClick();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        handleAddButtonClick();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleCloseButtonClick, handleAddButtonClick]);
+
+  function isPlayerSet(p: string) {
+    if (ruleStatus === 'same') {
+      return mustBeSameTeamGroup.includes(p);
+    }
+    if (ruleStatus === 'different') {
+      return mustBeDifferentTeamPair.includes(p);
+    }
+    if (ruleStatus === 'prefer') {
+      if (preferPosition) {
+        return preferPosition.name === p;
+      } else {
+        return false;
+      }
+    }
   }
 
   function handlePlayerClick(player: string) {
