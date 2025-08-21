@@ -55,8 +55,28 @@ export default function GameResultPopup({gameResult, handleCloseButtonClick}: {
           alert('이미지가 클립보드에 복사되었습니다!');
         }).catch(err => {
           console.error('클립보드에 복사하는데 실패했습니다.', err);
-          alert('이미지 복사에 실패했습니다. 대신 이미지를 기기에 저장합니다.');
-          downloadImage(blob);
+
+          // 🚀 Plan A: Web Share API 시도
+          const imageFile = new File([blob], 'capture.png', {type: 'image/png'});
+          if (navigator.share && navigator.canShare?.({files: [imageFile]})) {
+            navigator.share({
+              files: [imageFile],
+              title: '이미지 공유',
+              // text: '캡처된 이미지를 확인하세요.',
+            })
+              .then(() => console.log('성공적으로 공유했습니다.'))
+              .catch((shareError) => {
+                // 사용자가 공유를 취소한 경우 등
+                console.log('공유 중 에러 발생:', shareError);
+                // 공유에 실패하면 다운로드로 대체할 수도 있습니다.
+                alert('공유가 취소되었습니다.');
+              });
+          } else {
+            // 🚀 Plan B: Web Share API를 지원하지 않으면 다운로드 실행
+            alert('이미지 복사에 실패했습니다. 대신 이미지를 기기에 저장합니다.');
+            downloadImage(blob); // 이전에 만들어둔 다운로드 함수 호출
+          }
+
         });
       }, 'image/png');
     })

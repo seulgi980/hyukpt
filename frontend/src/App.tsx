@@ -61,18 +61,54 @@ function App() {
   const [mustBeDifferentTeamPairs, setMustBeDifferentTeamPairs] = useState<MustBeDifferentTeamPairType[]>([]);
   const [preferPositions, setPreferPositions] = useState<PlayerPreferPositionType[]>([]);
 
-  const gameResult: GameResult = {
-    top1: player[0],
-    jg1: player[1],
-    mid1: player[2],
-    ad1: player[3],
-    sup1: player[4],
-    top2: player[5],
-    jg2: player[6],
-    mid2: player[7],
-    ad2: player[8],
-    sup2: player[9],
+  // const gameResult: GameResult = {
+  //   top1: player[0],
+  //   jg1: player[1],
+  //   mid1: player[2],
+  //   ad1: player[3],
+  //   sup1: player[4],
+  //   top2: player[5],
+  //   jg2: player[6],
+  //   mid2: player[7],
+  //   ad2: player[8],
+  //   sup2: player[9],
+  // }
+
+  function shuffleArray(array: string[]) {
+    // 1. 원본 배열을 복사하여 불변성을 유지합니다.
+    const shuffled = [...array];
+
+    // 2. 배열의 마지막 요소부터 시작하여 역순으로 반복합니다.
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      // 3. 0부터 i까지의 무작위 인덱스 j를 선택합니다.
+      const j = Math.floor(Math.random() * (i + 1));
+
+      // 4. i번째 요소와 j번째 요소를 교환(swap)합니다.
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
   }
+
+  const handleGenerateTeams = (): GameResult => {
+    // 1. 플레이어 배열을 무작위로 섞습니다.
+    const shuffledPlayers = shuffleArray(player);
+
+    // 2. 섞인 배열을 기반으로 gameResult 객체를 생성합니다.
+    return {
+      top1: shuffledPlayers[0],
+      jg1: shuffledPlayers[1],
+      mid1: shuffledPlayers[2],
+      ad1: shuffledPlayers[3],
+      sup1: shuffledPlayers[4],
+      top2: shuffledPlayers[5],
+      jg2: shuffledPlayers[6],
+      mid2: shuffledPlayers[7],
+      ad2: shuffledPlayers[8],
+      sup2: shuffledPlayers[9],
+    };
+  };
+
 
   function handleAddMustBeSameTeamGroupsRuleClick(mustBeSameTeamGroup: MustBeSameTeamGroupType): void {
     // ★ 중요: 새로 추가할 그룹의 배열을 미리 정렬합니다.
@@ -415,7 +451,7 @@ function App() {
 
       {popUpStatus === 'result' &&
         <GameResultPopup
-          gameResult={gameResult}
+          gameResult={handleGenerateTeams()}
           handleCloseButtonClick={() => setPopUpStatus('close')}/>}
     </>
   )
