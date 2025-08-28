@@ -7,7 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 @Getter
-@Setter
 public class TeamConfigResponseDTO {
     private String status;
     private TeamConfigRequestDTO saved;

@@ -12,7 +12,6 @@ import java.util.List;
 @NoArgsConstructor
 @ToString
 @Getter
-@Setter
 public class TeamConfigRequestDTO {
     @Size(min = 10, max = 10, message = "members length must be 10.")
     private List<String> members;
@@ -27,7 +26,6 @@ public class TeamConfigRequestDTO {
     @NoArgsConstructor
     @ToString
     @Getter
-    @Setter
     public static class Constraints {
         private List<List<String>> mustBeSameTeamGroups;
         private List<List<String>> mustBeDifferentTeamPairs;
@@ -38,7 +36,6 @@ public class TeamConfigRequestDTO {
     @NoArgsConstructor
     @ToString
     @Getter
-    @Setter
     public static class PreferPositions {
         private String name;
 
