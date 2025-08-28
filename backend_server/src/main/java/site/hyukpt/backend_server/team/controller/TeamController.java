@@ -1,5 +1,6 @@
 package site.hyukpt.backend_server.team.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import site.hyukpt.backend_server.team.dto.TeamConfigRequestDTO;
 import site.hyukpt.backend_server.team.dto.TeamConfigResponseDTO;
+import site.hyukpt.backend_server.team.dto.TeamMatchResponseDTO;
 import site.hyukpt.backend_server.team.service.TeamService;
 
 @RestController
@@ -21,6 +23,12 @@ public class TeamController {
     @PostMapping("/config")
     public ResponseEntity<TeamConfigResponseDTO> saveTeamConfig(@RequestBody @Valid TeamConfigRequestDTO request, HttpServletResponse response) {
         TeamConfigResponseDTO result = teamService.saveConfigToCookie(request, response);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/match")
+    public ResponseEntity<TeamMatchResponseDTO> matchTeam(HttpServletRequest request) {
+        TeamMatchResponseDTO result = teamService.matchTeamFromCookie(request);
         return ResponseEntity.ok(result);
     }
 }
