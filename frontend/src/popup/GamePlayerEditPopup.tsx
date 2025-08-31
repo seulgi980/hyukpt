@@ -92,9 +92,9 @@ function TempPlayerCard({tp, handleTempPlayerXButtonClick, changeTempPlayerList,
 }
 
 
-export default function GamePlayerEditPopup({player, setPlayer, handleCloseButtonClick}: {
+export default function GamePlayerEditPopup({player, handleSavePlayerClick, handleCloseButtonClick}: {
   player: string[],
-  setPlayer: React.Dispatch<React.SetStateAction<string[]>>,
+  handleSavePlayerClick: (player: string[]) => void,
   handleCloseButtonClick: () => void
 }) {
 
@@ -106,9 +106,9 @@ export default function GamePlayerEditPopup({player, setPlayer, handleCloseButto
       alert("10명의 선수를 입력해주세요.");
       return;
     }
-    setPlayer(tempPlayerList);
+    handleSavePlayerClick(tempPlayerList)
     handleCloseButtonClick();
-  }, [tempPlayerList, setPlayer, handleCloseButtonClick]);
+  }, [tempPlayerList, handleSavePlayerClick, handleCloseButtonClick]);
 
   useEffect(() => {
     // 키보드 이벤트의 타입을 명시합니다 (KeyboardEvent).
