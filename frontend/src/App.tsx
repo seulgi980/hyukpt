@@ -78,10 +78,12 @@ function App() {
       const teamConfig = {
         members: playerParam,
         constraints: {
-          mustBeSameTeamGroupsParam,
-          mustBeDifferentTeamPairsParam,
+          mustBeSameTeamGroups: mustBeSameTeamGroupsParam.map(it => it.group),
+          mustBeDifferentTeamPairs: mustBeDifferentTeamPairsParam.map(it => it.pair),
         },
-        preferPositions: [...preferPositionsParam],
+        preferPositions: preferPositionsParam.map(it => {
+          return {name: it.name, prefer: it.prefer}
+        }),
       };
 
       const response = await fetch('api/team/config', {
