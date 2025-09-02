@@ -1,6 +1,6 @@
 package site.hyukpt.backend_server.team.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,9 +8,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import site.hyukpt.backend_server.global.exception.BusinessException;
 import site.hyukpt.backend_server.global.exception.GlobalErrorCode;
 import site.hyukpt.backend_server.team.dto.TeamConfigRequestDTO;
@@ -23,7 +23,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,51 +31,16 @@ public class TeamService {
     private static final List<String> ALLOWED_POSITION = List.of("top", "jg", "mid", "ad", "sup");
     private static final String COOKIE_NAME = "team_config";
     private final ObjectMapper objectMapper;
-    private final Random random  = new Random();
+    private final Random random = new Random();
+    private final ValidateService validateService;
 
     public TeamConfigResponseDTO saveConfigToCookie(@Valid TeamConfigRequestDTO request, HttpServletResponse response) {
-        /*
-            request값 검증
-         */
-        List<String> members = request.getMembers();
 
-        Set<String> memberSet = new HashSet<>(members);
-
-        // members 중복이름 방지
-        if(memberSet.size() != 10) {
-            Set<String> memberSetTemp = new HashSet<>();
-            for(String name : members) {
-                if(!memberSetTemp.add(name)) {
-                    throw BusinessException.builder()
-                            .errorCode(TeamErrorCode.DUPLICATE_MEMBER_NAME)
-                            .detail("중복된 이름이 존재합니다. name = " + name)
-                            .build();
-                }
-            }
-
-        }
-
-        if(request.getConstraints() != null) {
-            List<List<String>> mustBeSameTeamGroups = request.getConstraints().getMustBeSameTeamGroups();
-            List<List<String>> mustBeDifferentTeamPairs = request.getConstraints().getMustBeDifferentTeamPairs();
-
-            if (!isEmptyOrNull(mustBeSameTeamGroups)) {
-                validateSameTeamGroups(mustBeSameTeamGroups, memberSet);
-            }
-
-            if(!isEmptyOrNull(mustBeDifferentTeamPairs)) {
-                validateDifferentTeamPairs(mustBeDifferentTeamPairs, memberSet);
-            }
-        }
-
-        List<TeamConfigRequestDTO.PreferPositions> preferPositions = request.getPreferPositions();
-
-        if (!isEmptyOrNull(preferPositions)) {
-            validatePreferPositions(preferPositions, memberSet);
-        }
+        // request값 검증
+        validateService.validateTeamConfigRequest(request);
 
         // cookie 생성
-        String json = toJsonOrThrow(request);
+        String json = request.toJsonOrThrow(objectMapper);
         String encoded = URLEncoder.encode(json, StandardCharsets.UTF_8);
 
         ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, encoded)
@@ -95,132 +59,10 @@ public class TeamService {
                 .build();
     }
 
-    // java객체 -> json 문자열로 직렬화
-    private String toJsonOrThrow(Object obj) {
-        try {
-            return objectMapper.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
-            throw BusinessException.builder()
-                    .errorCode(GlobalErrorCode.INTERNAL_SERVER_ERROR)
-                    .customMessage("설정을 직렬화하는 중 오류가 발생했습니다.")
-                    .detail(e.getOriginalMessage())
-                    .build();
-        }
-    }
-
-    private void validatePreferPositions(List<TeamConfigRequestDTO.PreferPositions> preferPositions, Set<String> memberSet) {
-        for(int i=0; i<preferPositions.size(); i++){
-            TeamConfigRequestDTO.PreferPositions preferPosition = preferPositions.get(i);
-            String name = preferPosition.getName();
-            List<String> prefer = preferPosition.getPrefer();
-
-            if(!memberSet.contains(name)) {
-                throw BusinessException.builder()
-                        .errorCode(TeamErrorCode.NAME_NOT_IN_MEMBERS)
-                        .detail(i + " 번째 preferPosition의 " + name + "이라는 이름이 members에 존재하지 않습니다.")
-                        .build();
-            }
-
-            if(prefer == null || prefer.isEmpty() || prefer.size() > 5) {
-                throw BusinessException.builder()
-                        .errorCode(TeamErrorCode.INVALID_PREFER_SIZE)
-                        .detail(i + " 번째 preferPosition의 개수가 잘못되었습니다. size = " + prefer.size())
-                        .build();
-            }
-
-            for (String pre : prefer) {
-                if (!TeamService.ALLOWED_POSITION.contains(pre)) {
-                    throw BusinessException.builder()
-                            .errorCode(TeamErrorCode.INVALID_POSITION_NAME)
-                            .detail(i + " 번째 preferPosition의 position name이 올바르지 않습니다. prefer=" + pre)
-                            .build();
-                }
-            }
-
-        }
-    }
-
-    private void validateDifferentTeamPairs(List<List<String>> mustBeDifferentTeamPairs, Set<String> memberSet) {
-
-        for(int i=0; i<mustBeDifferentTeamPairs.size(); i++) {
-            List<String> pair = mustBeDifferentTeamPairs.get(i);
-
-            if(pair == null || pair.size() != 2) {
-                throw BusinessException.builder()
-                        .errorCode(TeamErrorCode.INVALID_PAIR_SIZE)
-                        .detail("[mustBeDifferentTeamPairs]: " + i + " 번째 pair의 size = " +  (pair == null ? "null" : pair.size()) + "로 조건에 맞지 않습니다.")
-                        .build();
-            }
-
-            for(String name : pair) {
-                if(!memberSet.contains(name)) {
-                    throw BusinessException.builder()
-                            .errorCode(TeamErrorCode.NAME_NOT_IN_MEMBERS)
-                            .detail("[mustBeDifferentTeamPairs]: " + i + " 번째 pair의 " + name + "이라는 이름이 members에 존재하지 않습니다.")
-                            .build();
-                }
-            }
-
-            String p1 = pair.get(0);
-            String p2 = pair.get(1);
-
-            if (p1.equals(p2)) {
-                throw BusinessException.builder()
-                        .errorCode(TeamErrorCode.DUPLICATE_MEMBER_NAME)
-                        .detail("[mustBeDifferentTeamPairs]: " + i + " 번째 pair에 중복된 이름이 존재합니다. name = " + p1)
-                        .build();
-            }
-
-        }
-    }
-
-    private void validateSameTeamGroups(List<List<String>> mustBeSameTeamGroups, Set<String> memberSet) {
-
-        for(int i=0; i<mustBeSameTeamGroups.size(); i++) {
-            List<String> group = mustBeSameTeamGroups.get(i);
-
-            if(group == null || group.size() < 2 || group.size() > 5) {
-                throw BusinessException.builder()
-                        .errorCode(TeamErrorCode.INVALID_SAME_TEAM_GROUPS_SIZE)
-                        .detail("[mustBeSameTeamGroups]: " + i + " 번째 group의 size = " +  (group == null ? "null" : group.size()) + "로 조건에 맞지 않습니다.")
-                        .build();
-            }
-
-            Set<String> groupSet = new HashSet<>();
-
-            for(String name : group) {
-                if (!memberSet.contains(name)) {
-                    throw BusinessException.builder()
-                            .errorCode(TeamErrorCode.NAME_NOT_IN_MEMBERS)
-                            .detail("[mustBeSameTeamGroups]: " + i + " 번째 group의 " + name + "이라는 이름이 members에 존재하지 않습니다.")
-                            .build();
-                }
-
-                if(!groupSet.add(name)) {
-                    throw BusinessException.builder()
-                            .errorCode(TeamErrorCode.DUPLICATE_MEMBER_NAME)
-                            .detail("[mustBeSameTeamGroups]: " + i + " 번째 group에 중복된 이름이 존재합니다. name = " + name)
-                            .build();
-                }
-            }
-
-        }
-    }
-
-    private boolean hasNoConstraints(TeamConfigRequestDTO config) {
-        return config.getConstraints() == null ||
-                (isEmptyOrNull(config.getConstraints().getMustBeSameTeamGroups()) &&
-                        isEmptyOrNull(config.getConstraints().getMustBeDifferentTeamPairs()));
-    }
-
-    private boolean isEmptyOrNull(List<?> list) {
-        return list == null || list.isEmpty();
-    }
-
 
     public TeamMatchResponseDTO matchTeamFromCookie(HttpServletRequest request) {
         // cookie에서 team config 정보 읽기
-        TeamConfigRequestDTO config = getConfigFromCookie(request);
+        TeamConfigRequestDTO config = this.getConfigFromCookie(request);
         List<String> members = config.getMembers();
 
         // 1. 먼저 팀부터 배정
@@ -228,22 +70,41 @@ public class TeamService {
         Set<String> team2 = new HashSet<>();
 
         // 제약조건이 없다면 그냥 5:5로 완전랜덤팀분할
-        if (hasNoConstraints(config)) {
+        if (this.hasNoConstraints(config)) {
             log.debug("제약조건이 없는 팀 배정 시작");
-            assignMembersRandomly(members, team1, team2);
+            this.assignMembersRandomly(members, team1, team2);
         } else { // 조건이 있다면 조건에 따라 팀분할
             log.debug("제약조건이 있는 팀 배정 시작");
-            assignTeamsWithConstraints(config, team1, team2);
+            this.assignTeamsWithConstraints(config, team1, team2);
         }
 
-
         // 2. 포지션 배정
-        TeamMatchResponseDTO.Result result = assignPositions(team1, team2, config.getPreferPositions());
+        TeamMatchResponseDTO.Result result = this.assignPositions(team1, team2, config.getPreferPositions());
 
         return TeamMatchResponseDTO.builder()
                 .status("ok")
                 .result(result)
                 .build();
+    }
+
+
+    private boolean hasNoConstraints(TeamConfigRequestDTO config) {
+        return config.getConstraints() == null ||
+                (ObjectUtils.isEmpty(config.getConstraints().getMustBeSameTeamGroups()) &&
+                        ObjectUtils.isEmpty(config.getConstraints().getMustBeDifferentTeamPairs()));
+    }
+
+    private void assignMembersRandomly(List<String> members, Set<String> team1, Set<String> team2) {
+        Collections.shuffle(members, random);
+        log.debug("members shuffle 결과 + {}", members);
+
+        for (int i = 0; i < members.size(); i++) {
+            if (i < 5) {
+                team1.add(members.get(i));
+            } else {
+                team2.add(members.get(i));
+            }
+        }
     }
 
     private void assignTeamsWithConstraints(TeamConfigRequestDTO config, Set<String> team1, Set<String> team2) {
@@ -266,7 +127,7 @@ public class TeamService {
         assignRemainingGroupsAndMembers(sameTeamGroups, assignedMembers, members, team1, team2);
 
         // 팀 최종 검증
-        if(team1.size() != 5 || team2.size() != 5) {
+        if (team1.size() != 5 || team2.size() != 5) {
             throw BusinessException.builder()
                     .errorCode(TeamErrorCode.TEAM_MATCH_FAILED)
                     .detail("팀 구성 실패: team1=" + team1.size() + "명, team2=" + team2.size() + "명")
@@ -275,10 +136,10 @@ public class TeamService {
     }
 
     private void processDifferentTeamPairs(List<List<String>> differentTeamPairsInput, List<Set<String>> sameTeamGroups, Set<String> team1, Set<String> team2, Set<String> assignedMembers) {
-        if (!isEmptyOrNull(differentTeamPairsInput)) {
+        if (!ObjectUtils.isEmpty(differentTeamPairsInput)) {
             // 주의: 연관된 같은팀 그룹이 큰 pair부터 배정해야한다. 오류는 노션에 써놓음
 
-            Collections.sort(differentTeamPairsInput, (pair1, pair2) -> {
+            differentTeamPairsInput.sort((pair1, pair2) -> {
                 int maxGroup1 = getPairMaxGroupSize(pair1, sameTeamGroups);
                 int maxGroup2 = getPairMaxGroupSize(pair2, sameTeamGroups);
                 return Integer.compare(maxGroup2, maxGroup1); // 큰 그룹 먼저
@@ -301,13 +162,13 @@ public class TeamService {
                 }
 
                 // 이미 한명이 배정이 완료된 멤버면 반대쪽에 넣고 끝
-                if(team1.contains(member1)) {
+                if (team1.contains(member1)) {
                     team2.add(member2);
                 } else if (team2.contains(member1)) {
                     team1.add(member2);
                 } else if (team1.contains(member2)) {
                     team2.add(member1);
-                }  else if (team2.contains(member2)) {
+                } else if (team2.contains(member2)) {
                     team1.add(member1);
                 } else {
                     int member1GroupSize = getMemberMaxGroupSize(member1, sameTeamGroups);
@@ -318,7 +179,7 @@ public class TeamService {
                     boolean canMember2GoTeam1 = team1.size() + member2GroupSize <= 5;
                     boolean canMember2GoTeam2 = team2.size() + member2GroupSize <= 5;
 
-                    log.debug("member1GroupSize = {}, member2GroupSize = {}",member1GroupSize,member2GroupSize);
+                    log.debug("member1GroupSize = {}, member2GroupSize = {}", member1GroupSize, member2GroupSize);
                     log.debug("canMember1GoTeam1 = {}, canMember1GoTeam2 = {}, canMember2GoTeam1 = {}, canMember2GoTeam2 = {}", canMember1GoTeam1, canMember1GoTeam2, canMember2GoTeam1, canMember2GoTeam2);
                     if (!canMember1GoTeam1 || !canMember2GoTeam2) {
                         // member1은 team2만 가능
@@ -330,7 +191,7 @@ public class TeamService {
                         team1.add(member1);
                         team2.add(member2);
                         log.debug("강제 배정: {} -> team1, {} -> team2", member1, member2);
-                    } else if (canMember1GoTeam1 && canMember1GoTeam2 && canMember2GoTeam1 && canMember2GoTeam2) {
+                    } else {
                         // 둘 다 양쪽 다 갈 수 있으면 랜덤
                         if (random.nextBoolean()) {
                             team1.add(member1);
@@ -341,12 +202,6 @@ public class TeamService {
                             team1.add(member2);
                             log.debug("랜덤 배정: {} -> team2, {} -> team1", member1, member2);
                         }
-                    } else {
-                        // 어떻게 배정해도 안 되는 경우
-                        throw BusinessException.builder()
-                                .errorCode(TeamErrorCode.TEAM_MATCH_FAILED)
-                                .detail("페어 " + member1 + ", " + member2 + "를 배정할 수 없습니다. 팀 크기 제한으로 인한 불가능한 조합")
-                                .build();
                     }
                 }
 
@@ -356,19 +211,19 @@ public class TeamService {
                     if (sameTeamGroup.contains(member1)) {
                         if (team1.contains(member1)) {
                             team1.addAll(sameTeamGroup);
-                            log.debug("배정 결과: team1에 {} 멤버와 같은팀 그룹 {} 추가",member1, sameTeamGroup);
+                            log.debug("배정 결과: team1에 {} 멤버와 같은팀 그룹 {} 추가", member1, sameTeamGroup);
                         } else {
                             team2.addAll(sameTeamGroup);
-                            log.debug("배정 결과: team2에 {} 멤버와 같은팀 그룹 {} 추가",member1, sameTeamGroup);
+                            log.debug("배정 결과: team2에 {} 멤버와 같은팀 그룹 {} 추가", member1, sameTeamGroup);
                         }
                     }
                     if (sameTeamGroup.contains(member2)) {
                         if (team1.contains(member2)) {
                             team1.addAll(sameTeamGroup);
-                            log.debug("배정 결과: team1에 {} 멤버와 같은팀 그룹 {} 추가",member2, sameTeamGroup);
+                            log.debug("배정 결과: team1에 {} 멤버와 같은팀 그룹 {} 추가", member2, sameTeamGroup);
                         } else {
                             team2.addAll(sameTeamGroup);
-                            log.debug("배정 결과: team2에 {} 멤버와 같은팀 그룹 {} 추가",member2, sameTeamGroup);
+                            log.debug("배정 결과: team2에 {} 멤버와 같은팀 그룹 {} 추가", member2, sameTeamGroup);
                         }
                     }
 
@@ -423,21 +278,22 @@ public class TeamService {
         List<Set<String>> sameTeamGroups = new ArrayList<>();
 
         // 같은팀 조건이 있다면
-        if(!isEmptyOrNull(sameTeamGroupsInput)) {
+        if (!ObjectUtils.isEmpty(sameTeamGroupsInput)) {
             // 첫원소는 그냥 대입
-            sameTeamGroups.add(new HashSet<>(sameTeamGroupsInput.get(0)));
+            sameTeamGroups.add(new HashSet<>(sameTeamGroupsInput.getFirst()));
 
-            for(int i=1; i<sameTeamGroupsInput.size(); i++){
+            for (int i = 1; i < sameTeamGroupsInput.size(); i++) {
                 List<String> group = sameTeamGroupsInput.get(i);
                 boolean isMerged = false;
 
-                out: for(Set<String> groupSet : sameTeamGroups) {
-                    for(String member : group) {
-                        if(groupSet.contains(member)) {
+                out:
+                for (Set<String> groupSet : sameTeamGroups) {
+                    for (String member : group) {
+                        if (groupSet.contains(member)) {
                             groupSet.addAll(group);
                             isMerged = true;
 
-                            if(groupSet.size() >= 6) {
+                            if (groupSet.size() >= 6) {
                                 throw BusinessException.builder()
                                         .errorCode(TeamErrorCode.CONFLICTING_CONSTRAINTS)
                                         .detail(groupSet + " 의 그룹구성 불가. 5명 초과. 같은팀 조건 확인 필요")
@@ -449,7 +305,7 @@ public class TeamService {
                 }
 
                 // 기존 그룹과 합쳐지지 않는다면 새 그룹 추가
-                if(!isMerged) {
+                if (!isMerged) {
                     sameTeamGroups.add(new HashSet<>(group));
                 }
             }
@@ -461,7 +317,7 @@ public class TeamService {
     private void assignRemainingGroupsAndMembers(List<Set<String>> sameTeamGroups, Set<String> assignedMembers, List<String> members, Set<String> team1, Set<String> team2) {
         // 같은팀 그룹들부터 먼저 배정
         log.debug("===[같은팀 그룹들 랜덤 배정 시작]===");
-        for(Set<String> sameTeamGroup : sameTeamGroups) {
+        for (Set<String> sameTeamGroup : sameTeamGroups) {
             log.debug("{} 그룹 팀배정 시작", sameTeamGroup);
             // 이미 위에서 배정된 그룹이라면 스킵
             boolean isAlreadyAssigned = false;
@@ -508,8 +364,8 @@ public class TeamService {
 
         // 나머지 개별 멤버들 랜덤 배정
         log.debug("===[나머지 개별 멤버들 랜덤 배정 시작]===");
-        for(String member : members) {
-            if(!assignedMembers.contains(member)) {
+        for (String member : members) {
+            if (!assignedMembers.contains(member)) {
                 if (team1.size() < 5 && team2.size() < 5) {
                     log.debug("team1, team2 둘다 배정 가능");
                     if (random.nextBoolean()) {
@@ -538,23 +394,10 @@ public class TeamService {
         }
     }
 
-    private void assignMembersRandomly(List<String> members, Set<String> team1, Set<String> team2) {
-        Collections.shuffle(members, random);
-        log.debug(" members shuffle 결과 + {} ", members);
-
-        for (int i = 0; i < members.size(); i++) {
-            if (i < 5) {
-                team1.add(members.get(i));
-            } else {
-                team2.add(members.get(i));
-            }
-        }
-    }
-
     private TeamMatchResponseDTO.Result assignPositions(Set<String> team1, Set<String> team2, List<TeamConfigRequestDTO.PreferPositions> preferPositions) {
         // 빠른 검색을 위해 Map 으로 변환
         Map<String, List<String>> memberPreferences = new HashMap<>();
-        if (!isEmptyOrNull(preferPositions)) {
+        if (!ObjectUtils.isEmpty(preferPositions)) {
             for (TeamConfigRequestDTO.PreferPositions pref : preferPositions) {
                 memberPreferences.put(pref.getName(), pref.getPrefer());
             }
@@ -580,7 +423,7 @@ public class TeamService {
         // team2 포지션 배정
         assignTeamPositions(team2, memberPreferences, assignResult, "2");
 
-        TeamMatchResponseDTO.Result result = TeamMatchResponseDTO.Result.builder()
+        return TeamMatchResponseDTO.Result.builder()
                 .top1(assignResult.get("top1"))
                 .jg1(assignResult.get("jg1"))
                 .mid1(assignResult.get("mid1"))
@@ -592,8 +435,6 @@ public class TeamService {
                 .ad2(assignResult.get("ad2"))
                 .sup2(assignResult.get("sup2"))
                 .build();
-
-        return result;
     }
 
     private void assignTeamPositions(Set<String> team, Map<String, List<String>> memberPreferences, Map<String, String> result, String teamNumber) {
@@ -615,7 +456,7 @@ public class TeamService {
         }
 
         // 선택지가 적은 포지션부터 우선 배정
-        Collections.sort(positions, (pos1, pos2) -> Integer.compare(positionCandidates.get(pos1).size(), positionCandidates.get(pos2).size()));
+        positions.sort(Comparator.comparingInt(pos -> positionCandidates.get(pos).size()));
 
         // 5개 포지션 순서대로 배정할 것
         for (String position : positions) {
@@ -645,7 +486,6 @@ public class TeamService {
         }
     }
 
-
     private TeamConfigRequestDTO getConfigFromCookie(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
@@ -669,7 +509,7 @@ public class TeamService {
         }
 
         try {
-            String decoded = URLDecoder.decode(configValue,  StandardCharsets.UTF_8);
+            String decoded = URLDecoder.decode(configValue, StandardCharsets.UTF_8);
             return objectMapper.readValue(decoded, TeamConfigRequestDTO.class);
         } catch (Exception e) {
             throw BusinessException.builder()
