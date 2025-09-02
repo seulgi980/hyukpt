@@ -7,6 +7,7 @@ import site.hyukpt.backend_server.global.exception.ErrorCode;
 @AllArgsConstructor
 public enum TeamErrorCode implements ErrorCode {
 
+    INVALID_MEMBER_SIZE("Team-0", HttpStatus.BAD_REQUEST, "members는 10명이어야 합니다."),
     DUPLICATE_MEMBER_NAME("Team-1", HttpStatus.BAD_REQUEST, "중복 이름이 있습니다."),
     INVALID_PAIR_SIZE("Team-2", HttpStatus.BAD_REQUEST, "mustBeDifferentTeamPairs는 각 쌍이 2명이어야 합니다."),
     INVALID_SAME_TEAM_GROUPS_SIZE("Team-3",HttpStatus.BAD_REQUEST, "mustBeSameTeamGroups는 각 그룹이 2~5명이어야 합니다."),
